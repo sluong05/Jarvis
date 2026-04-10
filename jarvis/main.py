@@ -8,7 +8,7 @@ import time
 sys.path.insert(0, os.path.dirname(__file__))
 
 from vision.hand_tracker import HandTracker
-from vision.gesture import GestureType, classify
+from vision.gesture import GestureType, classify, INDEX_TIP
 from control.mouse import MouseController
 from voice.listener import VoiceListener
 from voice.claude_agent import ClaudeAgent
@@ -68,11 +68,11 @@ def main():
     print("  JARVIS — Hands-Free Computer Control")
     print("=" * 50)
     print("Gestures:")
-    print("  Index finger up  → Move cursor")
-    print("  Pinch            → Left click")
-    print("  Two fingers up   → Scroll")
-    print("  Open palm        → Right click")
-    print("  Fist             → Pause/resume")
+    print("  Index finger up           → Move cursor")
+    print("  Pinch                     → Click / drag")
+    print("  Index + middle up         → Scroll up")
+    print("  Index + middle down       → Scroll down")
+    print("  Fist                      → Pause/resume")
     print("Voice: Say 'Jarvis <command>'")
     print("Press Q to quit.")
     print("=" * 50)
@@ -103,7 +103,7 @@ def main():
 
     paused = False
     prev_both_fists = False
-    prev_gesture = GestureType.NONE
+    is_dragging = False
 
     while True:
         frame = cam.read()
@@ -132,39 +132,45 @@ def main():
         prev_both_fists = both_fists
 
         if not paused and landmarks is not None:
-            index_tip = landmarks[8]  # INDEX_TIP
+            index_tip = landmarks[INDEX_TIP]
 
-            if gesture == GestureType.CURSOR:
+            if gesture == GestureType.CLICK:
+                # Hold mouse button and move — enables click, drag, and text selection
+                if not is_dragging:
+                    mouse.drag_start()
+                    is_dragging = True
                 mouse.move(index_tip[0], index_tip[1])
-                mouse.release_click()
-                mouse.release_right_click()
-                mouse.reset_scroll()
 
-            elif gesture == GestureType.CLICK:
+            elif gesture == GestureType.CURSOR:
+                # Releasing pinch ends the drag/click
+                if is_dragging:
+                    mouse.drag_end()
+                    is_dragging = False
                 mouse.move(index_tip[0], index_tip[1])
-                mouse.click()
-                mouse.reset_scroll()
 
-            elif gesture == GestureType.SCROLL:
-                mouse.scroll(index_tip[1])
-                mouse.release_click()
-                mouse.reset_scroll()
+            elif gesture == GestureType.SCROLL_UP:
+                if is_dragging:
+                    mouse.drag_end()
+                    is_dragging = False
+                mouse.scroll_up()
 
-            elif gesture == GestureType.RIGHT_CLICK:
-                mouse.right_click()
-                mouse.reset_scroll()
+            elif gesture == GestureType.SCROLL_DOWN:
+                if is_dragging:
+                    mouse.drag_end()
+                    is_dragging = False
+                mouse.scroll_down()
 
             else:
+                if is_dragging:
+                    mouse.drag_end()
+                    is_dragging = False
                 mouse.release_click()
-                mouse.release_right_click()
-                mouse.reset_scroll()
 
         elif not paused:
+            if is_dragging:
+                mouse.drag_end()
+                is_dragging = False
             mouse.release_click()
-            mouse.release_right_click()
-            mouse.reset_scroll()
-
-        prev_gesture = gesture
 
         # --- Voice commands ---
         while not voice_listener.command_queue.empty():

@@ -5,9 +5,9 @@ import math
 class GestureType(Enum):
     NONE = auto()
     CURSOR = auto()       # Index finger up → move cursor
-    CLICK = auto()        # Pinch (thumb + index) → left click
-    SCROLL = auto()       # Two fingers (index + middle) up → scroll
-    RIGHT_CLICK = auto()  # Open palm (all fingers extended) → right click
+    CLICK = auto()        # Pinch (thumb + index) → left click / drag
+    SCROLL_UP = auto()    # Index + middle pointing up → scroll up
+    SCROLL_DOWN = auto()  # Index + middle pointing down → scroll down
     PAUSE = auto()        # Fist (all fingers curled) → pause tracking
 
 
@@ -58,28 +58,28 @@ def classify(landmarks) -> GestureType:
     pinch_dist = _distance(thumb_tip, index_tip)
     # Normalize by hand size (wrist to middle MCP)
     hand_size = _distance(wrist, middle_mcp)
-    if hand_size > 0:
-        pinch_dist_norm = pinch_dist / hand_size
-    else:
-        pinch_dist_norm = 1.0
+    pinch_dist_norm = (pinch_dist / hand_size) if hand_size > 0 else 1.0
 
-    # --- Fist: no fingers extended ---
+    # --- Fist: no fingers extended → pause tracking ---
     if not index_up and not middle_up and not ring_up and not pinky_up:
         return GestureType.PAUSE
 
-    # --- Open palm: all fingers extended ---
-    if index_up and middle_up and ring_up and pinky_up:
-        return GestureType.RIGHT_CLICK
-
-    # --- Pinch: index and middle down, thumb close to index ---
+    # --- Pinch: thumb close to index, other fingers down → click/drag ---
     if pinch_dist_norm < 0.35 and not middle_up and not ring_up and not pinky_up:
         return GestureType.CLICK
 
-    # --- Scroll: index + middle up, others down ---
+    # --- Scroll: index + middle raised, ring + pinky down ---
+    # Direction is determined by whether fingertips are above or below the wrist (y axis).
+    # In normalized image coords, y=0 is top of frame, so tip_y < wrist_y means pointing up.
     if index_up and middle_up and not ring_up and not pinky_up:
-        return GestureType.SCROLL
+        avg_tip_y = (index_tip[1] + middle_tip[1]) / 2
+        avg_mcp_y = (index_mcp[1] + middle_mcp[1]) / 2
+        if avg_tip_y < avg_mcp_y:
+            return GestureType.SCROLL_UP
+        else:
+            return GestureType.SCROLL_DOWN
 
-    # --- Cursor: only index up ---
+    # --- Cursor: only index finger up ---
     if index_up and not middle_up and not ring_up and not pinky_up:
         return GestureType.CURSOR
 

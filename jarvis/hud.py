@@ -6,18 +6,18 @@ GESTURE_COLORS = {
     GestureType.NONE: (100, 100, 100),
     GestureType.CURSOR: (0, 255, 0),
     GestureType.CLICK: (0, 200, 255),
-    GestureType.SCROLL: (255, 200, 0),
-    GestureType.RIGHT_CLICK: (0, 100, 255),
+    GestureType.SCROLL_UP: (255, 180, 0),
+    GestureType.SCROLL_DOWN: (255, 140, 0),
     GestureType.PAUSE: (0, 0, 255),
 }
 
 GESTURE_LABELS = {
     GestureType.NONE: "---",
     GestureType.CURSOR: "CURSOR",
-    GestureType.CLICK: "CLICK",
-    GestureType.SCROLL: "SCROLL",
-    GestureType.RIGHT_CLICK: "RIGHT CLICK",
-    GestureType.PAUSE: "FIST",
+    GestureType.CLICK: "CLICK / DRAG",
+    GestureType.SCROLL_UP: "SCROLL UP",
+    GestureType.SCROLL_DOWN: "SCROLL DOWN",
+    GestureType.PAUSE: "PAUSE",
 }
 
 
@@ -48,10 +48,10 @@ def draw(frame, gesture: GestureType, paused: bool):
     # Gesture reference guide (bottom)
     guide = [
         "Index up: CURSOR",
-        "Pinch: CLICK",
-        "2 fingers: SCROLL",
-        "Open palm: RIGHT CLICK",
-        "Both fists: PAUSE",
+        "Pinch: CLICK  |  Hold + move: DRAG",
+        "Index + middle up: SCROLL UP",
+        "Index + middle down: SCROLL DOWN",
+        "Fist: PAUSE",
     ]
     for i, line in enumerate(guide):
         cv2.putText(frame, line, (10, h - 20 - (len(guide) - 1 - i) * 22),

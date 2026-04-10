@@ -1,9 +1,19 @@
 import pyautogui
 import time
-from config import SCREEN_W, SCREEN_H, SMOOTHING, CLICK_DEBOUNCE, SCROLL_SPEED, CURSOR_MARGIN
+from config import SCREEN_W, SCREEN_H, SMOOTHING, CLICK_DEBOUNCE, CURSOR_MARGIN, IS_MAC
 
 pyautogui.FAILSAFE = False  # Disable corner failsafe so hand can reach edges
 pyautogui.PAUSE = 0         # No artificial delay between pyautogui calls
+
+# Minimum normalized movement required before the cursor moves.
+# Raise this to require more finger movement (0.0 = off, 0.02 = default, 0.05 = very sluggish).
+DEADZONE = 0.02
+
+# Scroll ticks fired per second while the gesture is held.
+SCROLL_RATE = 1000
+
+# How many ticks per scroll event (higher = faster scroll per tick).
+SCROLL_TICKS = 3
 
 
 class MouseController:
@@ -11,13 +21,16 @@ class MouseController:
         self._cursor_x = SCREEN_W / 2
         self._cursor_y = SCREEN_H / 2
         self._last_click_time = 0
-        self._last_scroll_y = None
         self._clicking = False
         self._right_clicking = False
+        self._last_norm_x = None
+        self._last_norm_y = None
+        self._last_scroll_time = 0.0
 
     def move(self, norm_x, norm_y):
         """
         Move cursor to normalized coords [0,1].
+        Applies a deadzone so small finger tremors don't move the cursor.
         Applies exponential smoothing to reduce jitter.
         Remaps the active hand zone (inside CURSOR_MARGIN) to the full screen,
         so the hand doesn't need to reach the frame edge.
@@ -27,6 +40,16 @@ class MouseController:
         norm_x = max(0.0, min(1.0, (norm_x - m) / (1.0 - 2 * m)))
         norm_y = max(0.0, min(1.0, (norm_y - m) / (1.0 - 2 * m)))
 
+        # Deadzone: ignore movement smaller than DEADZONE relative to last position
+        if self._last_norm_x is not None:
+            dx = abs(norm_x - self._last_norm_x)
+            dy = abs(norm_y - self._last_norm_y)
+            if dx < DEADZONE and dy < DEADZONE:
+                return  # Too little movement — don't update cursor
+
+        self._last_norm_x = norm_x
+        self._last_norm_y = norm_y
+
         target_x = norm_x * SCREEN_W
         target_y = norm_y * SCREEN_H
 
@@ -35,16 +58,30 @@ class MouseController:
 
         pyautogui.moveTo(int(self._cursor_x), int(self._cursor_y))
 
-    def click(self):
-        """Trigger a left click with debounce."""
+    def _scroll(self, ticks):
+        """Fire a scroll event rate-limited to SCROLL_RATE times per second."""
         now = time.time()
-        if not self._clicking and (now - self._last_click_time) > CLICK_DEBOUNCE:
+        if now - self._last_scroll_time >= 1.0 / SCROLL_RATE:
+            pyautogui.scroll(ticks)
+            self._last_scroll_time = now
+
+    def scroll_up(self):
+        """Scroll up by SCROLL_TICKS, rate-limited."""
+        self._scroll(SCROLL_TICKS)
+
+    def scroll_down(self):
+        """Scroll down by SCROLL_TICKS, rate-limited."""
+        self._scroll(-SCROLL_TICKS)
+
+    def click(self):
+        """Click without drag (for compatibility)."""
+        now = time.time()
+        if (now - self._last_click_time) > CLICK_DEBOUNCE:
             pyautogui.click()
             self._last_click_time = now
-            self._clicking = True
 
     def release_click(self):
-        self._clicking = False
+        pass
 
     def right_click(self):
         """Trigger a right click with debounce."""
@@ -57,26 +94,31 @@ class MouseController:
     def release_right_click(self):
         self._right_clicking = False
 
-    def scroll(self, norm_y):
-        """
-        Joystick-style scroll: hand Y position in frame controls direction + speed.
-        Center of frame = dead zone (no scroll).
-        Above center = scroll up (faster the higher).
-        Below center = scroll down (faster the lower).
-        """
-        # Distance from center (-0.5 to +0.5), positive = above center
-        offset = 0.5 - norm_y
-        dead_zone = 0.12  # fraction of frame that counts as "center"
+    def double_click(self):
+        """Trigger a double click with debounce."""
+        now = time.time()
+        if (now - self._last_click_time) > CLICK_DEBOUNCE:
+            pyautogui.doubleClick()
+            self._last_click_time = now
 
-        if abs(offset) < dead_zone:
-            return  # hand in neutral zone, no scroll
+    def three_finger_swipe(self):
+        """Simulate a three-finger swipe (switch apps on Mac / task view on Windows)."""
+        now = time.time()
+        if (now - self._last_click_time) > CLICK_DEBOUNCE:
+            if IS_MAC:
+                pyautogui.hotkey('ctrl', 'right')  # macOS: three-finger swipe right
+            else:
+                pyautogui.hotkey('alt', 'tab')  # Windows: alt+tab switches apps
+            self._last_click_time = now
 
-        # Scale offset outside dead zone into a speed value
-        direction = 1 if offset > 0 else -1
-        magnitude = (abs(offset) - dead_zone) / (0.5 - dead_zone)  # 0→1
-        scroll_amount = int(direction * magnitude * SCROLL_SPEED * 8)
-        if scroll_amount != 0:
-            pyautogui.scroll(scroll_amount)
+    def drag_start(self):
+        """Start dragging (mouse down)."""
+        if not self._clicking:
+            pyautogui.mouseDown()
+            self._clicking = True
 
-    def reset_scroll(self):
-        self._last_scroll_y = None
+    def drag_end(self):
+        """End dragging (mouse up)."""
+        if self._clicking:
+            pyautogui.mouseUp()
+            self._clicking = False
