@@ -13,16 +13,16 @@ SMOOTHING = 0.2
 # Fraction of the frame edge (each side) that maps to the screen boundary.
 # e.g. 0.15 means the hand only needs to reach 15% from the edge to hit the screen edge.
 # Increase if you still can't reach corners; decrease if movement feels too sensitive.
-CURSOR_MARGIN = 0.25
+CURSOR_MARGIN = 0.30
 
 # Pinch click threshold (normalized distance between thumb tip and index tip)
-PINCH_THRESHOLD = 0.05
+PINCH_THRESHOLD = 0.15
 
 # Click debounce in seconds
 CLICK_DEBOUNCE = 0.5
 
 # Scroll sensitivity (pixels per frame when scroll gesture active)
-SCROLL_SPEED = 3
+SCROLL_SPEED = 1
 
 # Webcam index
 CAM_INDEX = 0

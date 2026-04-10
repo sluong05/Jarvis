@@ -1,5 +1,6 @@
 from enum import Enum, auto
 import math
+import config
 
 
 class GestureType(Enum):
@@ -72,7 +73,7 @@ def classify(landmarks) -> GestureType:
         return GestureType.RIGHT_CLICK
 
     # --- Pinch: index and middle down, thumb close to index ---
-    if pinch_dist_norm < 0.35 and not middle_up and not ring_up and not pinky_up:
+    if pinch_dist_norm < config.PINCH_THRESHOLD and not middle_up and not ring_up and not pinky_up:
         return GestureType.CLICK
 
     # --- Scroll: index + middle up, others down ---

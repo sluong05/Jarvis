@@ -16,13 +16,13 @@ SMOOTHING = 0.2
 CURSOR_MARGIN = 0.15
 
 # Pinch click threshold (normalized distance between thumb tip and index tip)
-PINCH_THRESHOLD = 0.05
+PINCH_THRESHOLD = 0.15
 
 # Click debounce in seconds
 CLICK_DEBOUNCE = 0.5
 
 # Scroll sensitivity (pixels per frame when scroll gesture active)
-SCROLL_SPEED = 3
+SCROLL_SPEED = 1
 
 # Webcam index
 CAM_INDEX = 0
