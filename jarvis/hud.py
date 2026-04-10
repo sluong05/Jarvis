@@ -8,6 +8,7 @@ GESTURE_COLORS = {
     GestureType.CLICK: (0, 200, 255),
     GestureType.SCROLL_UP: (255, 180, 0),
     GestureType.SCROLL_DOWN: (255, 140, 0),
+    GestureType.RIGHT_CLICK: (180, 0, 255),
     GestureType.PAUSE: (0, 0, 255),
 }
 
@@ -17,6 +18,7 @@ GESTURE_LABELS = {
     GestureType.CLICK: "CLICK / DRAG",
     GestureType.SCROLL_UP: "SCROLL UP",
     GestureType.SCROLL_DOWN: "SCROLL DOWN",
+    GestureType.RIGHT_CLICK: "RIGHT CLICK",
     GestureType.PAUSE: "PAUSE",
 }
 
@@ -51,6 +53,7 @@ def draw(frame, gesture: GestureType, paused: bool):
         "Pinch: CLICK  |  Hold + move: DRAG",
         "Index + middle up: SCROLL UP",
         "Index + middle down: SCROLL DOWN",
+        "Pinky up: RIGHT CLICK",
         "Fist: PAUSE",
     ]
     for i, line in enumerate(guide):

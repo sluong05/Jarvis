@@ -16,6 +16,11 @@ import hud
 import config
 
 
+# Seconds to freeze cursor movement after a right click so the
+# context menu doesn't get dismissed by an accidental mouse nudge.
+RIGHT_CLICK_FREEZE = 0.6
+
+
 class CameraStream:
     """Reads camera frames on a background thread.
     Uses DirectShow on Windows, AVFoundation on macOS.
@@ -72,6 +77,7 @@ def main():
     print("  Pinch                     → Click / drag")
     print("  Index + middle up         → Scroll up")
     print("  Index + middle down       → Scroll down")
+    print("  Pinky up                  → Right click")
     print("  Fist                      → Pause/resume")
     print("Voice: Say 'Jarvis <command>'")
     print("Press Q to quit.")
@@ -104,6 +110,8 @@ def main():
     paused = False
     prev_both_fists = False
     is_dragging = False
+    prev_gesture = GestureType.NONE
+    last_right_click_time = 0.0
 
     while True:
         frame = cam.read()
@@ -131,22 +139,33 @@ def main():
             print(f"[Jarvis] Tracking {'paused' if paused else 'resumed'}")
         prev_both_fists = both_fists
 
-        if not paused and landmarks is not None:
+        # After a right click, freeze all cursor/gesture activity briefly
+        # so the context menu isn't immediately dismissed by mouse movement.
+        right_click_frozen = (time.time() - last_right_click_time) < RIGHT_CLICK_FREEZE
+
+        if not paused and not right_click_frozen and landmarks is not None:
             index_tip = landmarks[INDEX_TIP]
 
             if gesture == GestureType.CLICK:
-                # Hold mouse button and move — enables click, drag, and text selection
                 if not is_dragging:
                     mouse.drag_start()
                     is_dragging = True
                 mouse.move(index_tip[0], index_tip[1])
 
             elif gesture == GestureType.CURSOR:
-                # Releasing pinch ends the drag/click
                 if is_dragging:
                     mouse.drag_end()
                     is_dragging = False
                 mouse.move(index_tip[0], index_tip[1])
+
+            elif gesture == GestureType.RIGHT_CLICK:
+                if is_dragging:
+                    mouse.drag_end()
+                    is_dragging = False
+                # Only fire on the first frame of the gesture
+                if prev_gesture != GestureType.RIGHT_CLICK:
+                    mouse.right_click()
+                    last_right_click_time = time.time()
 
             elif gesture == GestureType.SCROLL_UP:
                 if is_dragging:
@@ -166,11 +185,13 @@ def main():
                     is_dragging = False
                 mouse.release_click()
 
-        elif not paused:
+        elif not paused and not right_click_frozen:
             if is_dragging:
                 mouse.drag_end()
                 is_dragging = False
             mouse.release_click()
+
+        prev_gesture = gesture
 
         # --- Voice commands ---
         while not voice_listener.command_queue.empty():

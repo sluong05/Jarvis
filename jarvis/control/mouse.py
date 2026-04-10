@@ -21,8 +21,8 @@ class MouseController:
         self._cursor_x = SCREEN_W / 2
         self._cursor_y = SCREEN_H / 2
         self._last_click_time = 0
+        self._last_right_click_time = 0
         self._clicking = False
-        self._right_clicking = False
         self._last_norm_x = None
         self._last_norm_y = None
         self._last_scroll_time = 0.0
@@ -84,15 +84,11 @@ class MouseController:
         pass
 
     def right_click(self):
-        """Trigger a right click with debounce."""
+        """Trigger a right click, debounced independently from left click."""
         now = time.time()
-        if not self._right_clicking and (now - self._last_click_time) > CLICK_DEBOUNCE:
+        if (now - self._last_right_click_time) > CLICK_DEBOUNCE:
             pyautogui.rightClick()
-            self._last_click_time = now
-            self._right_clicking = True
-
-    def release_right_click(self):
-        self._right_clicking = False
+            self._last_right_click_time = now
 
     def double_click(self):
         """Trigger a double click with debounce."""

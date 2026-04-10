@@ -8,6 +8,7 @@ class GestureType(Enum):
     CLICK = auto()        # Pinch (thumb + index) → left click / drag
     SCROLL_UP = auto()    # Index + middle pointing up → scroll up
     SCROLL_DOWN = auto()  # Index + middle pointing down → scroll down
+    RIGHT_CLICK = auto()  # Only pinky up → right click
     PAUSE = auto()        # Fist (all fingers curled) → pause tracking
 
 
@@ -68,9 +69,11 @@ def classify(landmarks) -> GestureType:
     if pinch_dist_norm < 0.35 and not middle_up and not ring_up and not pinky_up:
         return GestureType.CLICK
 
+    # --- Right click: only pinky up ---
+    if pinky_up and not index_up and not middle_up and not ring_up:
+        return GestureType.RIGHT_CLICK
+
     # --- Scroll: index + middle raised, ring + pinky down ---
-    # Direction is determined by whether fingertips are above or below the wrist (y axis).
-    # In normalized image coords, y=0 is top of frame, so tip_y < wrist_y means pointing up.
     if index_up and middle_up and not ring_up and not pinky_up:
         avg_tip_y = (index_tip[1] + middle_tip[1]) / 2
         avg_mcp_y = (index_mcp[1] + middle_mcp[1]) / 2
