@@ -1,0 +1,22 @@
+# Virtual environment
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# MediaPipe model files (large binaries — download separately)
+*.task
+
+# Calibration (user-specific, regenerated on each launch)
+calibration.pkl
+*.pkl
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/

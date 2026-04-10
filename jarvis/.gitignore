@@ -1,0 +1,18 @@
+# Virtual environment
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# MediaPipe model files (large binaries — download separately)
+*.task
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
