@@ -106,6 +106,24 @@ class ClaudeAgent:
 
     def handle_command(self, command: str):
         """Send command to local Ollama model, parse response, execute, speak."""
+        # Fast-path: intercept obvious patterns before hitting the LLM
+        lower = command.lower().strip()
+        if lower.startswith("type "):
+            text = command[5:].strip()
+            self._execute({"action": "type_text", "text": text})
+            self._speak(f"Typing: {text}")
+            return
+        if any(lower.startswith(p) for p in ("delete everything", "clear that", "backspace everything", "delete all")):
+            self._execute({"action": "delete_text"})
+            self._speak("Deleted.")
+            return
+        if lower in ("scroll up", "scroll up please"):
+            self._execute({"action": "scroll_up"})
+            return
+        if lower in ("scroll down", "scroll down please"):
+            self._execute({"action": "scroll_down"})
+            return
+
         try:
             response = ollama.chat(
                 model=config.OLLAMA_MODEL,

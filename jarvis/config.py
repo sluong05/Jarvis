@@ -13,7 +13,7 @@ SMOOTHING = 0.2
 # Fraction of the frame edge (each side) that maps to the screen boundary.
 # e.g. 0.15 means the hand only needs to reach 15% from the edge to hit the screen edge.
 # Increase if you still can't reach corners; decrease if movement feels too sensitive.
-CURSOR_MARGIN = 0.15
+CURSOR_MARGIN = 0.25
 
 # Pinch click threshold (normalized distance between thumb tip and index tip)
 PINCH_THRESHOLD = 0.05

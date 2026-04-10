@@ -54,11 +54,15 @@ def draw(frame, gesture: GestureType, paused: bool, gaze_xy=None):
         "Eyes: CURSOR",
         "Pinch: CLICK",
         "2 fingers: SCROLL",
-        "Open palm: RIGHT CLICK",
+        "Pinky only: RIGHT CLICK",
         "Both fists: PAUSE",
     ]
     for i, line in enumerate(guide):
-        cv2.putText(frame, line, (10, h - 20 - (len(guide) - 1 - i) * 22),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (160, 160, 160), 1)
+        y = h - 20 - (len(guide) - 1 - i) * 22
+        # Dark shadow for readability over any background
+        cv2.putText(frame, line, (11, y + 1),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
+        cv2.putText(frame, line, (10, y),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
 
     return frame

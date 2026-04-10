@@ -7,7 +7,7 @@ class GestureType(Enum):
     CURSOR = auto()       # Index finger up → move cursor
     CLICK = auto()        # Pinch (thumb + index) → left click
     SCROLL = auto()       # Two fingers (index + middle) up → scroll
-    RIGHT_CLICK = auto()  # Open palm (all fingers extended) → right click
+    RIGHT_CLICK = auto()  # Pinky only (all others curled) → right click
     PAUSE = auto()        # Fist (all fingers curled) → pause tracking
 
 
@@ -67,8 +67,8 @@ def classify(landmarks) -> GestureType:
     if not index_up and not middle_up and not ring_up and not pinky_up:
         return GestureType.PAUSE
 
-    # --- Open palm: all fingers extended ---
-    if index_up and middle_up and ring_up and pinky_up:
+    # --- Pinky only: right click ---
+    if not index_up and not middle_up and not ring_up and pinky_up:
         return GestureType.RIGHT_CLICK
 
     # --- Pinch: index and middle down, thumb close to index ---
