@@ -18,6 +18,7 @@ class VoiceListener:
         self.recognizer = sr.Recognizer()
         self.recognizer.energy_threshold = 400
         self.recognizer.dynamic_energy_threshold = True
+        self.recognizer.pause_threshold = 1.5  # seconds of silence before command is considered done
 
     def start(self):
         self._thread.start()
@@ -31,7 +32,7 @@ class VoiceListener:
             print("[Voice] Listening for 'Jarvis'...")
             while not self._stop_event.is_set():
                 try:
-                    audio = self.recognizer.listen(source, timeout=2, phrase_time_limit=5)
+                    audio = self.recognizer.listen(source, timeout=2)
                     text = self.recognizer.recognize_google(audio).lower()
                     print(f"[Voice] Heard: {text}")
 
@@ -45,7 +46,7 @@ class VoiceListener:
                             # Wake word only — listen for follow-up
                             print("[Voice] Waiting for command...")
                             try:
-                                audio2 = self.recognizer.listen(source, timeout=4, phrase_time_limit=6)
+                                audio2 = self.recognizer.listen(source, timeout=4)
                                 command = self.recognizer.recognize_google(audio2).lower().strip()
                                 print(f"[Voice] Command: {command}")
                                 self.command_queue.put(command)

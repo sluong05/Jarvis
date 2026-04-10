@@ -22,13 +22,17 @@ When given a voice command, respond ONLY with a valid JSON object (no markdown, 
 
 Available actions:
 - "open_app": open an application. target = app name (e.g. "chrome", "terminal", "explorer", "vscode")
+- "open_url": open a website in the default browser. target = site name (e.g. "netflix", "youtube", "gmail") or a full URL
 - "type_text": type text. text = what to type
+- "delete_text": delete everything in the current field (select all + delete). Use for "delete everything", "clear that", "backspace everything"
+- "backspace": press backspace N times. target = number as a string (e.g. "5", "20"). Use for "delete 3 words", "backspace 10 times"
 - "hotkey": press a keyboard shortcut. target = keys joined by + (e.g. "ctrl+c", "cmd+tab", "win+d")
 - "screenshot": take a screenshot
 - "scroll_up": scroll up
 - "scroll_down": scroll down
 - "none": no action, just respond conversationally
 
+Prefer "open_url" over "open_app" for streaming services, social media, and web-based tools (e.g. Netflix, YouTube, Gmail, Twitter, Reddit).
 Keep the "speak" field short (1-2 sentences max). Sound like Tony Stark's Jarvis — confident and concise.
 Respond with JSON only. No extra text, no markdown fences."""
 
@@ -46,6 +50,30 @@ APP_MAP_MAC = {
     "notes": "Notes",
     "calendar": "Calendar",
     "mail": "Mail",
+}
+
+URL_MAP = {
+    "netflix": "https://www.netflix.com",
+    "youtube": "https://www.youtube.com",
+    "gmail": "https://mail.google.com",
+    "google": "https://www.google.com",
+    "google drive": "https://drive.google.com",
+    "google docs": "https://docs.google.com",
+    "google sheets": "https://sheets.google.com",
+    "github": "https://www.github.com",
+    "twitter": "https://www.twitter.com",
+    "x": "https://www.x.com",
+    "reddit": "https://www.reddit.com",
+    "instagram": "https://www.instagram.com",
+    "linkedin": "https://www.linkedin.com",
+    "hulu": "https://www.hulu.com",
+    "disney plus": "https://www.disneyplus.com",
+    "disney+": "https://www.disneyplus.com",
+    "twitch": "https://www.twitch.tv",
+    "chatgpt": "https://chat.openai.com",
+    "claude": "https://claude.ai",
+    "notion": "https://www.notion.so",
+    "figma": "https://www.figma.com",
 }
 
 APP_MAP_WINDOWS = {
@@ -114,9 +142,27 @@ class ClaudeAgent:
         if action == "open_app":
             self._open_app(target)
 
+        elif action == "open_url":
+            self._open_url(target)
+
         elif action == "type_text":
             if text:
                 keyboard.typewrite(text)
+
+        elif action == "delete_text":
+            if IS_MAC:
+                keyboard.hotkey("cmd", "a")
+            else:
+                keyboard.hotkey("ctrl", "a")
+            keyboard.press("backspace")
+
+        elif action == "backspace":
+            try:
+                count = int(target) if target else 1
+            except ValueError:
+                count = 1
+            for _ in range(count):
+                keyboard.press("backspace")
 
         elif action == "hotkey":
             if target:
@@ -136,6 +182,16 @@ class ClaudeAgent:
         elif action == "scroll_down":
             import pyautogui
             pyautogui.scroll(-10)
+
+    def _open_url(self, target: str):
+        key = target.lower().strip()
+        url = URL_MAP.get(key, target if target.startswith("http") else f"https://{target}")
+        if IS_MAC:
+            subprocess.Popen(["open", url])
+        elif IS_WINDOWS:
+            subprocess.Popen(["start", "", url], shell=True)
+        else:
+            subprocess.Popen(["xdg-open", url])
 
     def _open_app(self, target: str):
         key = target.lower().strip()
