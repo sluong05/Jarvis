@@ -8,24 +8,17 @@ import time
 sys.path.insert(0, os.path.dirname(__file__))
 
 from vision.hand_tracker import HandTracker
-from vision.gesture import GestureType, classify, INDEX_TIP
+from vision.gesture import GestureType, classify, get_scroll_speed, INDEX_TIP
 from control.mouse import MouseController
 from voice.listener import VoiceListener
 from voice.claude_agent import ClaudeAgent
 import hud
 import config
 
-
-# Seconds to freeze cursor movement after a right click so the
-# context menu doesn't get dismissed by an accidental mouse nudge.
 RIGHT_CLICK_FREEZE = 0.6
 
 
 class CameraStream:
-    """Reads camera frames on a background thread.
-    Uses DirectShow on Windows, AVFoundation on macOS.
-    """
-
     def __init__(self, index=0):
         if config.IS_WINDOWS:
             self._cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)
@@ -39,12 +32,10 @@ class CameraStream:
         self._running = False
 
     def start(self):
-        # macOS AVFoundation needs a moment to initialize; Windows does not
         if config.IS_MAC:
             time.sleep(1.0)
         self._running = True
         threading.Thread(target=self._reader, daemon=True).start()
-        # Wait until first frame arrives
         for _ in range(100):
             time.sleep(0.05)
             with self._lock:
@@ -75,8 +66,8 @@ def main():
     print("Gestures:")
     print("  Index finger up           → Move cursor")
     print("  Pinch                     → Click / drag")
-    print("  Index + middle up         → Scroll up")
-    print("  Index + middle down       → Scroll down")
+    print("  Index + middle up         → Scroll up (more vertical = faster)")
+    print("  Index + middle down       → Scroll down (more vertical = faster)")
     print("  Pinky up                  → Right click")
     print("  Fist                      → Pause/resume")
     print("Voice: Say 'Jarvis <command>'")
@@ -102,7 +93,6 @@ def main():
 
     print("[Jarvis] Camera ready.")
 
-    # Start voice layer
     voice_listener = VoiceListener()
     claude_agent = ClaudeAgent()
     voice_listener.start()
@@ -118,13 +108,9 @@ def main():
         if frame is None:
             continue
 
-        # Flip frame horizontally for mirror view
         frame = cv2.flip(frame, 1)
-
-        # Detect hand landmarks (up to 2 hands)
         all_landmarks, frame = tracker.process(frame)
 
-        # Primary hand drives cursor/gestures
         landmarks = all_landmarks[0] if all_landmarks else None
         gesture = classify(landmarks)
 
@@ -139,8 +125,6 @@ def main():
             print(f"[Jarvis] Tracking {'paused' if paused else 'resumed'}")
         prev_both_fists = both_fists
 
-        # After a right click, freeze all cursor/gesture activity briefly
-        # so the context menu isn't immediately dismissed by mouse movement.
         right_click_frozen = (time.time() - last_right_click_time) < RIGHT_CLICK_FREEZE
 
         if not paused and not right_click_frozen and landmarks is not None:
@@ -162,7 +146,6 @@ def main():
                 if is_dragging:
                     mouse.drag_end()
                     is_dragging = False
-                # Only fire on the first frame of the gesture
                 if prev_gesture != GestureType.RIGHT_CLICK:
                     mouse.right_click()
                     last_right_click_time = time.time()
@@ -171,13 +154,15 @@ def main():
                 if is_dragging:
                     mouse.drag_end()
                     is_dragging = False
-                mouse.scroll_up()
+                speed = get_scroll_speed(landmarks)
+                mouse.scroll_up(speed)
 
             elif gesture == GestureType.SCROLL_DOWN:
                 if is_dragging:
                     mouse.drag_end()
                     is_dragging = False
-                mouse.scroll_down()
+                speed = get_scroll_speed(landmarks)
+                mouse.scroll_down(speed)
 
             else:
                 if is_dragging:
@@ -197,14 +182,12 @@ def main():
         while not voice_listener.command_queue.empty():
             command = voice_listener.command_queue.get_nowait()
             print(f"[Jarvis] Executing: {command}")
-            # Run in thread so vision loop stays responsive
             threading.Thread(
                 target=claude_agent.handle_command,
                 args=(command,),
                 daemon=True,
             ).start()
 
-        # --- HUD ---
         if config.SHOW_HUD:
             frame = hud.draw(frame, gesture, paused)
 

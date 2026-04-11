@@ -11,11 +11,11 @@ DEADZONE = 0.02
 # Scroll ticks fired per second while the gesture is held.
 SCROLL_RATE = 1000
 
-# How many ticks per scroll event (higher = faster scroll per tick).
-SCROLL_TICKS = 10
+# Maximum scroll ticks per event (fired when fingers point perfectly vertical).
+SCROLL_TICKS_MAX = 20
 
-# Zoom ticks per event (Ctrl+scroll). Higher = bigger zoom step.
-ZOOM_TICKS = 10
+# Minimum scroll ticks per event (fired when fingers are barely vertical).
+SCROLL_TICKS_MIN = 1
 
 
 class MouseController:
@@ -64,23 +64,15 @@ class MouseController:
             pyautogui.scroll(ticks)
             self._last_scroll_time = now
 
-    def scroll_up(self):
-        self._scroll(SCROLL_TICKS)
+    def scroll_up(self, speed=1.0):
+        """Scroll up, with speed 0.0–1.0 controlling the tick count."""
+        ticks = max(SCROLL_TICKS_MIN, round(SCROLL_TICKS_MAX * speed))
+        self._scroll(ticks)
 
-    def scroll_down(self):
-        self._scroll(-SCROLL_TICKS)
-
-    def zoom_in(self):
-        """Zoom in via Ctrl+scroll up (works in browsers, image viewers, etc.)."""
-        pyautogui.keyDown('ctrl')
-        pyautogui.scroll(ZOOM_TICKS)
-        pyautogui.keyUp('ctrl')
-
-    def zoom_out(self):
-        """Zoom out via Ctrl+scroll down."""
-        pyautogui.keyDown('ctrl')
-        pyautogui.scroll(-ZOOM_TICKS)
-        pyautogui.keyUp('ctrl')
+    def scroll_down(self, speed=1.0):
+        """Scroll down, with speed 0.0–1.0 controlling the tick count."""
+        ticks = max(SCROLL_TICKS_MIN, round(SCROLL_TICKS_MAX * speed))
+        self._scroll(-ticks)
 
     def click(self):
         now = time.time()
