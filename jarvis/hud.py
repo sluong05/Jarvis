@@ -1,7 +1,6 @@
 import cv2
 from vision.gesture import GestureType
 
-# Gesture label colors (BGR)
 GESTURE_COLORS = {
     GestureType.NONE: (100, 100, 100),
     GestureType.CURSOR: (0, 255, 0),
@@ -9,6 +8,8 @@ GESTURE_COLORS = {
     GestureType.SCROLL_UP: (255, 180, 0),
     GestureType.SCROLL_DOWN: (255, 140, 0),
     GestureType.RIGHT_CLICK: (180, 0, 255),
+    GestureType.ZOOM_IN: (0, 255, 180),
+    GestureType.ZOOM_OUT: (0, 180, 255),
     GestureType.PAUSE: (0, 0, 255),
 }
 
@@ -19,6 +20,8 @@ GESTURE_LABELS = {
     GestureType.SCROLL_UP: "SCROLL UP",
     GestureType.SCROLL_DOWN: "SCROLL DOWN",
     GestureType.RIGHT_CLICK: "RIGHT CLICK",
+    GestureType.ZOOM_IN: "ZOOM IN",
+    GestureType.ZOOM_OUT: "ZOOM OUT",
     GestureType.PAUSE: "PAUSE",
 }
 
@@ -26,20 +29,15 @@ GESTURE_LABELS = {
 def draw(frame, gesture: GestureType, paused: bool):
     h, w = frame.shape[:2]
 
-    # Status bar background
     cv2.rectangle(frame, (0, 0), (w, 50), (20, 20, 20), -1)
-
-    # Title
     cv2.putText(frame, "JARVIS", (10, 35),
                 cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 200, 255), 2)
 
-    # Gesture label
     label = GESTURE_LABELS.get(gesture, "---")
     color = GESTURE_COLORS.get(gesture, (200, 200, 200))
     cv2.putText(frame, label, (120, 35),
                 cv2.FONT_HERSHEY_SIMPLEX, 1.0, color, 2)
 
-    # Paused overlay
     if paused:
         overlay = frame.copy()
         cv2.rectangle(overlay, (0, 0), (w, h), (0, 0, 50), -1)
@@ -47,13 +45,14 @@ def draw(frame, gesture: GestureType, paused: bool):
         cv2.putText(frame, "TRACKING PAUSED", (w // 2 - 180, h // 2),
                     cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 3)
 
-    # Gesture reference guide (bottom)
     guide = [
         "Index up: CURSOR",
         "Pinch: CLICK  |  Hold + move: DRAG",
         "Index + middle up: SCROLL UP",
         "Index + middle down: SCROLL DOWN",
         "Pinky up: RIGHT CLICK",
+        "Thumb+index+middle spread: ZOOM IN",
+        "Thumb+index+middle pinch: ZOOM OUT",
         "Fist: PAUSE",
     ]
     for i, line in enumerate(guide):
