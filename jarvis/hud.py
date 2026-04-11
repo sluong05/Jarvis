@@ -8,6 +8,8 @@ GESTURE_COLORS = {
     GestureType.SCROLL_UP: (255, 180, 0),
     GestureType.SCROLL_DOWN: (255, 140, 0),
     GestureType.RIGHT_CLICK: (180, 0, 255),
+    GestureType.ZOOM_IN: (0, 255, 180),
+    GestureType.ZOOM_OUT: (0, 180, 255),
     GestureType.PAUSE: (0, 0, 255),
 }
 
@@ -18,6 +20,8 @@ GESTURE_LABELS = {
     GestureType.SCROLL_UP: "SCROLL UP",
     GestureType.SCROLL_DOWN: "SCROLL DOWN",
     GestureType.RIGHT_CLICK: "RIGHT CLICK",
+    GestureType.ZOOM_IN: "ZOOM IN",
+    GestureType.ZOOM_OUT: "ZOOM OUT",
     GestureType.PAUSE: "PAUSE",
 }
 
@@ -47,6 +51,7 @@ def draw(frame, gesture: GestureType, paused: bool):
         "Index + middle up: SCROLL UP",
         "Index + middle down: SCROLL DOWN",
         "Pinky up: RIGHT CLICK",
+        "Both palms apart: ZOOM OUT  |  together: ZOOM IN",
         "Fist: PAUSE",
     ]
     for i, line in enumerate(guide):

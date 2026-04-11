@@ -4,11 +4,10 @@ import cv2
 import threading
 import time
 
-# Allow imports from project root
 sys.path.insert(0, os.path.dirname(__file__))
 
 from vision.hand_tracker import HandTracker
-from vision.gesture import GestureType, classify, get_scroll_speed, INDEX_TIP
+from vision.gesture import GestureType, classify, get_scroll_speed, get_two_hand_zoom, INDEX_TIP
 from control.mouse import MouseController
 from voice.listener import VoiceListener
 from voice.claude_agent import ClaudeAgent
@@ -69,6 +68,8 @@ def main():
     print("  Index + middle up         → Scroll up (more vertical = faster)")
     print("  Index + middle down       → Scroll down (more vertical = faster)")
     print("  Pinky up                  → Right click")
+    print("  Both palms open, apart    → Zoom out")
+    print("  Both palms open, together → Zoom in")
     print("  Fist                      → Pause/resume")
     print("Voice: Say 'Jarvis <command>'")
     print("Press Q to quit.")
@@ -111,8 +112,23 @@ def main():
         frame = cv2.flip(frame, 1)
         all_landmarks, frame = tracker.process(frame)
 
-        landmarks = all_landmarks[0] if all_landmarks else None
-        gesture = classify(landmarks)
+        # --- Two-hand zoom takes priority over single-hand gestures ---
+        zoom_gesture = get_two_hand_zoom(all_landmarks)
+        if zoom_gesture in (GestureType.ZOOM_IN, GestureType.ZOOM_OUT):
+            if is_dragging:
+                mouse.drag_end()
+                is_dragging = False
+            if zoom_gesture == GestureType.ZOOM_IN:
+                mouse.zoom_in()
+            else:
+                mouse.zoom_out()
+            if config.SHOW_HUD:
+                frame = hud.draw(frame, zoom_gesture, paused)
+            cv2.imshow("JARVIS", frame)
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
+            prev_gesture = zoom_gesture
+            continue
 
         # --- Both fists simultaneously → toggle pause ---
         both_fists = (
@@ -124,6 +140,10 @@ def main():
             paused = not paused
             print(f"[Jarvis] Tracking {'paused' if paused else 'resumed'}")
         prev_both_fists = both_fists
+
+        # Primary hand drives cursor/gestures
+        landmarks = all_landmarks[0] if all_landmarks else None
+        gesture = classify(landmarks)
 
         right_click_frozen = (time.time() - last_right_click_time) < RIGHT_CLICK_FREEZE
 
@@ -192,7 +212,6 @@ def main():
             frame = hud.draw(frame, gesture, paused)
 
         cv2.imshow("JARVIS", frame)
-
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 
