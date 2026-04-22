@@ -138,7 +138,7 @@ def classify(landmarks) -> GestureType:
         return GestureType.PAUSE
 
     # --- Pinch → click/drag ---
-    if pinch_dist_norm < 0.35 and not middle_up and not ring_up and not pinky_up:
+    if pinch_dist_norm < 0.25 and not middle_up and not ring_up and not pinky_up:
         return GestureType.CLICK
 
     # --- Only pinky up → right click ---
